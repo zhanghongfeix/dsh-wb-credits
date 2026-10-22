@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  # 不加 paths-ignore：CI 要作为默认分支的 required check，按路径过滤时不触发，
+  # 这个 check 永远不会出现，纯文档 PR 会被永久 pending 阻塞。提速靠步骤本身便宜。
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # 插件零第三方依赖，无 lockfile，不需要缓存与安装步骤。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 语法检查
+        run: |
+          for f in lib/*.js assets/*.js tools/*.mjs; do
+            echo "node --check $f"
+            node --check "$f"
+          done
+      # 两个自测都不需要真实账号与网络：threshold-test 只算阈值边界，
+      # auto-detect-test 用仿真 settings 与 credentials 验网关识别。
+      # tools/probe.mjs 与 tools/gateway-test.mjs 要真实面板账号与网关，不进 CI。
+      - name: 阈值边界自测
+        run: node tools/threshold-test.mjs
+      - name: 网关自动识别自测
+        run: node tools/auto-detect-test.mjs

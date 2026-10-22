@@ -1,0 +1,12 @@
+version: 2
+
+updates:
+  # 插件零第三方依赖，没有 lockfile，只跟踪 workflow 里用到的 Action 版本。
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
